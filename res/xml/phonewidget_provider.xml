@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:resizeMode="none"
+                    android:minWidth="40dip"
+                    android:minHeight="40dip"
+                    android:updatePeriodMillis="86400000"
+                    android:initialLayout="@layout/main"
+                    android:configure="com.krizai.phonewidget.ConfigureActivity"
+    android:widgetCategory="keyguard|home_screen"/>
