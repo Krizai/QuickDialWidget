@@ -5,8 +5,10 @@ import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -28,6 +30,7 @@ import java.io.IOException;
  */
 public class ConfigureActivity extends Activity {
     private static final int PICK_CONTACT = 1;
+
     private boolean firstStart = true;
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,31 +96,20 @@ public class ConfigureActivity extends Activity {
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
         if (extras != null) {
-            int mAppWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
 
-            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+            int appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
 
-            RemoteViews views = new RemoteViews(getPackageName(),R.layout.main);
-            Bitmap bm = null;
-            try {
-                bm = MediaStore.Images.Media.getBitmap(getContentResolver(), photoUri);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            views.setImageViewBitmap(R.id.photoImage, bm);
-            views.setTextViewText(R.id.typeText, phoneType);
+            SharedPreferences prefs = getSharedPreferences(PhoneWidgetProvider.WIDGET_PREFS_ID+appWidgetId, Context.MODE_PRIVATE);
+            SharedPreferences.Editor prefsEditor = prefs.edit();
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHONE_KEY, phone);
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_TYPE_KEY, phoneType);
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHOTO_KEY, photoUri.toString());
+            prefsEditor.commit();
 
-            Intent callIntent = new Intent(Intent.ACTION_CALL);
-            callIntent.setData(Uri.parse("tel:"+phone));
+            PhoneWidgetProvider.updateWidget(this,appWidgetId);
 
-            PendingIntent actionPendingIntent = PendingIntent.getActivity(this, 0, callIntent, 0);
-
-            views.setOnClickPendingIntent(R.id.photoImage, actionPendingIntent);
-
-
-            appWidgetManager.partiallyUpdateAppWidget(mAppWidgetId, views);
             Intent resultValue = new Intent();
-            resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
+            resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             setResult(RESULT_OK, resultValue);
             finish();
         }
