@@ -55,6 +55,7 @@ public class ConfigureActivity extends Activity {
                     Cursor c = getContentResolver().query(contactData, null, null, null, null);
                     if (c != null && c.moveToFirst()) {
                         String id = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+                        final String phoneName = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
                         String photoUriString = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
                         final Uri photoUri = photoUriString != null ? Uri.parse(photoUriString) : null;
                         String hasPhone = c.getString(c.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
@@ -66,13 +67,13 @@ public class ConfigureActivity extends Activity {
                                     null, null);
                             phones.moveToFirst();
                             if(phones.getCount() == 1){
-                                configureWidget(photoUri, phones);
+                                configureWidget(photoUri, phoneName, phones);
                             }else {
                                 (new AlertDialog.Builder(this)).setCursor(phones, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         phones.moveToPosition(which);
-                                        configureWidget(photoUri, phones);
+                                        configureWidget(photoUri, phoneName, phones);
                                     }
                                 }, "data1").show();
 
@@ -85,14 +86,14 @@ public class ConfigureActivity extends Activity {
         }
     }
 
-    private void configureWidget(Uri photoUri, Cursor phones) {
+    private void configureWidget(Uri photoUri, String phoneName, Cursor phones) {
         String phone = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA1));
         int phoneTypeId = phones.getInt(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA2));
         String phoneType = (String) ContactsContract.CommonDataKinds.Phone.getTypeLabel(getResources(), phoneTypeId, "");
-        configureWidget(phone,phoneType, photoUri);
+        configureWidget(phone, phoneName, phoneType, photoUri);
     }
 
-    private void configureWidget(String phone, String phoneType, Uri photoUri){
+    private void configureWidget(String phone, String phoneName, String phoneType, Uri photoUri){
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
         if (extras != null) {
@@ -103,7 +104,8 @@ public class ConfigureActivity extends Activity {
             SharedPreferences.Editor prefsEditor = prefs.edit();
             prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHONE_KEY, phone);
             prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_TYPE_KEY, phoneType);
-            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHOTO_KEY, photoUri.toString());
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_NAME_KEY, phoneName);
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHOTO_KEY, photoUri != null ? photoUri.toString(): null);
             prefsEditor.commit();
 
             PhoneWidgetProvider.updateWidget(this,appWidgetId);
