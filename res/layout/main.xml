@@ -23,7 +23,9 @@
         android:gravity="center"
         android:textSize="11dp"
         android:fontFamily="sans-serif-light"
-        android:textColor="#6a6a6a"/>
+        android:textColor="#6a6a6a"
+        android:lines="1"
+        android:ellipsize="end"/>
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="20dp"
@@ -32,7 +34,9 @@
         android:background="@android:color/transparent"
         android:gravity="center"
         android:textSize="12dp"
-        android:textColor="@android:color/white"/>
+        android:textColor="@android:color/white"
+        android:singleLine="true"
+        android:ellipsize="end"/>
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
