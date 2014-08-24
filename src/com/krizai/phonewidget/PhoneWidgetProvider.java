@@ -7,7 +7,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -18,12 +20,14 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.net.Uri;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created with IntelliJ IDEA.
@@ -40,6 +44,7 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
     static final String WIDGET_PREFS_TYPE_KEY = "WIDGET_PREFS_TYPE_KEY";
     static final String WIDGET_PREFS_NAME_KEY = "WIDGET_PREFS_NAME_KEY";
     static final String WIDGET_PREFS_PHOTO_KEY = "WIDGET_PREFS_PHOTO_KEY";
+    static final String WIDGET_PREFS_CONTACT_ID_KEY = "WIDGET_PREFS_CONTACT_ID_KEY";
 
     static final float WIDGET_CIRCLE_WIDTH = 4;
 
@@ -57,25 +62,62 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         String phoneName = prefs.getString(WIDGET_PREFS_NAME_KEY, "");
         String phoneType = prefs.getString(WIDGET_PREFS_TYPE_KEY, "");
         String path  = prefs.getString(WIDGET_PREFS_PHOTO_KEY, null);
+        String contactId  = prefs.getString(WIDGET_PREFS_CONTACT_ID_KEY, null);
         Uri photoUri = path != null ? Uri.parse(path) : null;
 
-        updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
+        if(contactId != null) {
+            updateWidget(context, appWidgetId, contactId, phone, phoneType);
+        }else{
+            updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
+        }
     }
 
+    //New  style ( ver >1.0.3
+    private static void updateWidget(Context context, int appWidgetId, String contactId,
+                                     String phone, String phoneType) {
+        Cursor c = context.getContentResolver().query(
+                ContactsContract.Contacts.CONTENT_URI,
+                null,
+                ContactsContract.Contacts._ID +" = ?",
+                new String[]{contactId}, null);
+
+        if (c != null && c.moveToFirst()) {
+            String phoneName = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
+            String photoUriString = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+            Uri photoUri = photoUriString != null ? Uri.parse(photoUriString) : null;
+            updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
+        }else{
+            updateWidget(context, appWidgetId, "", "Not Found", "Not Found", (Bitmap)null);
+        }
+
+        c.close();
+    }
+
+    //Old style ( ver <=1.0.3
     private static void updateWidget(Context context, int appWidgetId, String phone, String phoneName,
                                      String phoneType, Uri photoUri) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main);
-
+        Bitmap bm = null;
         if(photoUri != null) {
-            Bitmap bm = null;
             try {
+                InputStream input = context.getContentResolver().openInputStream(photoUri);
+                bm =  BitmapFactory.decodeStream(input);
                 bm = MediaStore.Images.Media.getBitmap(context.getContentResolver(), photoUri);
+                bm = prepareBitmap(bm);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            bm = prepareBitmap(bm);
-            views.setImageViewBitmap(R.id.photoImage, bm);
+        }
+        updateWidget(context, appWidgetId, phone, phoneName, phoneType, bm);
+    }
+
+    private static void updateWidget(Context context, int appWidgetId, String phone, String phoneName,
+                                     String phoneType, Bitmap contactPhoto) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main);
+
+        if(contactPhoto != null) {
+            contactPhoto = prepareBitmap(contactPhoto);
+            views.setImageViewBitmap(R.id.photoImage, contactPhoto);
         }else{
             views.setImageViewResource(R.id.photoImage, R.drawable.default_userpic);
         }
