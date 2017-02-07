@@ -2,28 +2,15 @@ package com.krizai.phonewidget;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProviderInfo;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.view.View;
-import android.widget.RemoteViews;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 
 /**
