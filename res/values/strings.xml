@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">QuickDial</string>
     <string name="no_phone">This contact has no phone numbers</string>
+    <string name="welcome_text">Thank you for using QuickDialWidget. You can check our privacy policy below.</string>
+    <string name="privacy_btn">Privacy Policy</string>
+    <string name="continue_btn">Continue</string>
 </resources>

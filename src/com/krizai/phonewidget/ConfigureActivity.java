@@ -24,21 +24,26 @@ public class ConfigureActivity extends Activity {
     private static final int PICK_CONTACT = 1;
 
     private static final String FIRST_START_ACTIVITY_FLAG_KEY = "FIRST_START_ACTIVITY_FLAG_KEY";
+    private static final String GLOBAL_WIDGET_PREFS = "com.krizai.phonewidget.GLOBAL_WIDGET_PREFS";
+    private static final String WELCOME_SHOWN = "com.krizai.phonewidget.GLOBAL_WIDGET_PREFS.WELCOME_SHOWN";
+    private static final String PRIVACY_POLICY_PATH = "http://krizai.github.io/QuickDialWidget/privacy.html";
 
-    private boolean firstStart = true;
+    private boolean contactPickerStarted = false;
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setResult(RESULT_CANCELED);
     }
     public void onResume() {
         super.onResume();
-        if(firstStart) {
-            Intent intent = new Intent(Intent.ACTION_PICK);
-            intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
-            startActivityForResult(intent, PICK_CONTACT);
-            firstStart = false;
+        if(!contactPickerStarted) {
+            if(isWelcomeShown()) {
+                startContactPicker();
+            }else{
+                showWelcome();
+            }
         }
     }
+
     public void onActivityResult(int reqCode, int resultCode, Intent data) {
         super.onActivityResult(reqCode, resultCode, data);
         switch (reqCode) {
@@ -87,15 +92,55 @@ public class ConfigureActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean(FIRST_START_ACTIVITY_FLAG_KEY, this.firstStart);
+        outState.putBoolean(FIRST_START_ACTIVITY_FLAG_KEY, this.contactPickerStarted);
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-        this.firstStart = savedInstanceState.getBoolean(FIRST_START_ACTIVITY_FLAG_KEY, false);
+        this.contactPickerStarted = savedInstanceState.getBoolean(FIRST_START_ACTIVITY_FLAG_KEY, false);
     }
 
+    private boolean isWelcomeShown(){
+        SharedPreferences prefs = getSharedPreferences(GLOBAL_WIDGET_PREFS, Context.MODE_PRIVATE);
+        return prefs.getBoolean(WELCOME_SHOWN, false);
+    }
+
+    private void showWelcome(){
+        (new AlertDialog.Builder(this))
+                .setMessage(R.string.welcome_text)
+                .setNegativeButton(R.string.privacy_btn, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        showPrivacyPolicy();
+                    }
+                })
+                .setPositiveButton(R.string.continue_btn, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        startContactPicker();
+                    }
+                })
+                .show();
+
+
+        SharedPreferences prefs = getSharedPreferences(GLOBAL_WIDGET_PREFS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor prefsEditor = prefs.edit();
+        prefsEditor.putBoolean(WELCOME_SHOWN, true);
+        prefsEditor.commit();
+    }
+
+    private void showPrivacyPolicy() {
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_PATH));
+        startActivity(browserIntent);
+    }
+
+    private void startContactPicker() {
+        contactPickerStarted = true;
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+        startActivityForResult(intent, PICK_CONTACT);
+    }
 
     private void configureWidget(String contactId, Cursor phones) {
         String phone = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA1));
