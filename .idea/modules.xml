@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/phonewidget.iml" filepath="$PROJECT_DIR$/phonewidget.iml" />
+      <module fileurl="file://$PROJECT_DIR$/QuickDialWidget.iml" filepath="$PROJECT_DIR$/QuickDialWidget.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
 </project>
