@@ -1,11 +1,13 @@
 package com.krizai.phonewidget;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,8 +17,11 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import java.io.IOException;
@@ -30,6 +35,8 @@ import java.io.InputStream;
  * To change this template use File | Settings | File Templates.
  */
 public class PhoneWidgetProvider extends AppWidgetProvider {
+
+    public static final String WIDGET_IDS_KEY = "WIDGET_IDS_KEY";
 
     static final String WIDGET_PREFS_ID = "WIDGET_PREFS_ID";
 
@@ -48,7 +55,21 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent.hasExtra(WIDGET_IDS_KEY)) {
+            int[] ids = intent.getExtras().getIntArray(WIDGET_IDS_KEY);
+            this.onUpdate(context, AppWidgetManager.getInstance(context), ids);
+        } else{
+            super.onReceive(context, intent);
+        }
+    }
+
     static void updateWidget(Context context, int appWidgetId){
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            context.startActivity(new Intent(context, PermissionRequestActivity.class));
+            return;
+        }
 
         SharedPreferences prefs = context.getSharedPreferences(WIDGET_PREFS_ID+appWidgetId, Context.MODE_PRIVATE);
         String phone = prefs.getString(WIDGET_PREFS_PHONE_KEY, "");

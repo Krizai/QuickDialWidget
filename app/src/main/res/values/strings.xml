@@ -5,4 +5,8 @@
     <string name="welcome_text">Thank you for using QuickDialWidget. You can check our privacy policy below.</string>
     <string name="privacy_btn">Privacy Policy</string>
     <string name="continue_btn">Continue</string>
+    <string name="title_activity_permission_request">PermissionRequestActivity</string>
+    <string name="permission_request_text">Thank you for using QuickDial Widget\nTo display contact information, the widget needs a permission to access your contacts list.\n Please grant the permission to continue using QuickDial Widget.</string>
+    <string name="grant">Grant</string>
+    <string name="cancel">Cancel</string>
 </resources>
