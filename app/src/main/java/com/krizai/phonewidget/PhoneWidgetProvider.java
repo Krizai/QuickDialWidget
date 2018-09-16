@@ -17,9 +17,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.net.Uri;
-import android.os.Build;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -36,6 +37,9 @@ import java.io.InputStream;
  */
 public class PhoneWidgetProvider extends AppWidgetProvider {
 
+    public static final String REFRESH_WIDGET_ACTION = "REFRESH_WIDGET";
+    public static final String CALL_ACTION = "CALL_ACTION";
+
     public static final String WIDGET_IDS_KEY = "WIDGET_IDS_KEY";
 
     static final String WIDGET_PREFS_ID = "WIDGET_PREFS_ID";
@@ -50,24 +54,47 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for( int appWidgetId : appWidgetIds){
+        for (int appWidgetId : appWidgetIds) {
             updateWidget(context, appWidgetId);
         }
     }
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.hasExtra(WIDGET_IDS_KEY)) {
-            int[] ids = intent.getExtras().getIntArray(WIDGET_IDS_KEY);
-            this.onUpdate(context, AppWidgetManager.getInstance(context), ids);
-        } else{
-            super.onReceive(context, intent);
+        String action = intent.getAction();
+        if (action == null) {
+            return;
+        }
+
+        switch (action) {
+            case REFRESH_WIDGET_ACTION:
+                if (intent.hasExtra(WIDGET_IDS_KEY)) {
+                    int[] ids = intent.getExtras().getIntArray(WIDGET_IDS_KEY);
+                    this.onUpdate(context, AppWidgetManager.getInstance(context), ids);
+                }
+                break;
+            case CALL_ACTION:
+                Uri uri = intent.getData();
+                if (uri != null) {
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermission(Manifest.permission.CALL_PHONE, context);
+                    }else{
+                        Intent callIntent = new Intent(Intent.ACTION_CALL);
+                        callIntent.setData(uri);
+                        callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(callIntent);
+                    }
+                }
+                break;
+            default:
+                super.onReceive(context, intent);
+                break;
         }
     }
 
     static void updateWidget(Context context, int appWidgetId){
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            context.startActivity(new Intent(context, PermissionRequestActivity.class));
+            requestPermission(Manifest.permission.READ_CONTACTS, context);
             return;
         }
 
@@ -104,7 +131,9 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
             updateWidget(context, appWidgetId, "", "Not Found", "Not Found", (Bitmap)null);
         }
 
-        c.close();
+        if (c != null) {
+            c.close();
+        }
     }
 
     //Old style ( ver <=1.0.3
@@ -138,10 +167,11 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.typeText, phoneType);
         views.setTextViewText(R.id.nameText, phoneName);
 
-        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        Intent callIntent = new Intent(context, PhoneWidgetProvider.class);
+        callIntent.setAction(CALL_ACTION);
         callIntent.setData(Uri.parse("tel:"+phone));
 
-        PendingIntent actionPendingIntent = PendingIntent.getActivity(context, 0, callIntent, 0);
+        PendingIntent actionPendingIntent = PendingIntent.getBroadcast(context, 0, callIntent, 0);
 
         views.setOnClickPendingIntent(R.id.plateImage, actionPendingIntent);
 
@@ -173,5 +203,12 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         canvas.drawCircle(halfWidth, halfHeight, radius - WIDGET_CIRCLE_WIDTH, paint);
 
         return output;
+    }
+
+    static private void requestPermission(@NonNull String permission, Context context){
+        Intent intent = new Intent(context, PermissionRequestActivity.class);
+        intent.putExtra(PermissionRequestActivity.PERMISSIONS_KEY, permission);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
     }
 }

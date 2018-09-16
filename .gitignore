@@ -2,3 +2,5 @@ out
 phonewidget.apk
 qd_ks.jks
 build
+.gradle
+app/release
