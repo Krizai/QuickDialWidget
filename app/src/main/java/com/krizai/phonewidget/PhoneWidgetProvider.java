@@ -11,17 +11,20 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Shader;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.RemoteViews;
 
@@ -50,7 +53,7 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
     static final String WIDGET_PREFS_PHOTO_KEY = "WIDGET_PREFS_PHOTO_KEY";
     static final String WIDGET_PREFS_CONTACT_ID_KEY = "WIDGET_PREFS_CONTACT_ID_KEY";
 
-    static final float WIDGET_CIRCLE_WIDTH = 4;
+    static final int WIDGET_WIDTH = 70;
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -124,7 +127,7 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
 
         if (c != null && c.moveToFirst()) {
             String phoneName = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-            String photoUriString = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+            String photoUriString = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_URI));
             Uri photoUri = photoUriString != null ? Uri.parse(photoUriString) : null;
             updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
         }else{
@@ -145,7 +148,6 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
                 InputStream input = context.getContentResolver().openInputStream(photoUri);
                 bm =  BitmapFactory.decodeStream(input);
                 bm = MediaStore.Images.Media.getBitmap(context.getContentResolver(), photoUri);
-                bm = prepareBitmap(bm);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -159,10 +161,11 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main);
 
         if(contactPhoto != null) {
-            contactPhoto = prepareBitmap(contactPhoto);
+            contactPhoto = prepareBitmapWithUserPic(context, contactPhoto);
             views.setImageViewBitmap(R.id.photoImage, contactPhoto);
         }else{
-            views.setImageViewResource(R.id.photoImage, R.drawable.default_userpic);
+            contactPhoto = prepareBitmapWithDefaultUserpic(context);
+            views.setImageViewBitmap(R.id.photoImage, contactPhoto);
         }
         views.setTextViewText(R.id.typeText, phoneType);
         views.setTextViewText(R.id.nameText, phoneName);
@@ -173,34 +176,69 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
 
         PendingIntent actionPendingIntent = PendingIntent.getBroadcast(context, 0, callIntent, 0);
 
-        views.setOnClickPendingIntent(R.id.plateImage, actionPendingIntent);
+        views.setOnClickPendingIntent(R.id.overlay_button, actionPendingIntent);
 
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    private static Bitmap prepareBitmap(Bitmap bitmap) {
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap
-                .getHeight(), Bitmap.Config.ARGB_8888);
+    private static Bitmap prepareBitmapWithUserPic(Context context, Bitmap bitmap) {
+        int widgetWidth = dpToPx(context, WIDGET_WIDTH - 10);
+        Size bitmapSize = new Size(widgetWidth, widgetWidth);
+        Bitmap output = Bitmap.createBitmap(bitmapSize.width, bitmapSize.height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(output);
 
-        final float halfWidth = canvas.getWidth()/2;
-        final float halfHeight = canvas.getHeight()/2;
-        final float radius = Math.max(halfWidth, halfHeight) - 2;
+        Paint xferPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        xferPaint.setColor(Color.RED);
 
-        //Draw white circle
-        final Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        whitePaint.setColor(Color.WHITE);
-        canvas.drawCircle(halfWidth, halfHeight, radius, whitePaint);
+        canvas.drawRoundRect(new RectF(0,0,bitmapSize.width,bitmapSize.height),
+                dpToPx(context, 3),
+                dpToPx(context, 3),
+                xferPaint);
+
+        xferPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+
+        canvas.drawBitmap(bitmap,
+                new Rect((bitmap.getWidth() - bitmap.getHeight())/2,0, bitmap.getWidth(),bitmap.getHeight()),
+                new Rect(0,0,bitmapSize.width, bitmapSize.height),
+                xferPaint);
+
+        Bitmap iconBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.call);
+        Paint plainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        canvas.drawBitmap(iconBitmap,
+                bitmapSize.width - iconBitmap.getWidth() - dpToPx(context, 4),
+                dpToPx(context, 4),
+                plainPaint);
+
+        return output;
+    }
 
 
-        // Load the bitmap as a shader to the paint.
-        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        final Shader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        paint.setShader(shader);
+    private static Bitmap prepareBitmapWithDefaultUserpic(Context context) {
+        int widgetWidth = dpToPx(context, WIDGET_WIDTH - 10);
+        Size bitmapSize = new Size(widgetWidth, widgetWidth);
+        Bitmap output = Bitmap.createBitmap(bitmapSize.width, bitmapSize.height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
 
-        // Draw a circle with the required radius.
-        canvas.drawCircle(halfWidth, halfHeight, radius - WIDGET_CIRCLE_WIDTH, paint);
+        Paint xferPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        xferPaint.setColor(Color.rgb(203, 203, 203));
+
+        canvas.drawRoundRect(new RectF(0,0,bitmapSize.width,bitmapSize.height),
+                             dpToPx(context, 3),
+                             dpToPx(context, 3),
+                             xferPaint);
+
+        Paint plainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Bitmap placeholderBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.default_userpic);
+        canvas.drawBitmap(placeholderBitmap,
+                          new Rect(0,0, placeholderBitmap.getWidth(),placeholderBitmap.getHeight()),
+                          new Rect(5,10, bitmapSize.width - 5, bitmapSize.height),
+                          xferPaint);
+        Bitmap iconBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.call);
+        canvas.drawBitmap(iconBitmap,
+                          bitmapSize.width - iconBitmap.getWidth() - dpToPx(context, 4),
+                          dpToPx(context, 4),
+                          plainPaint);
 
         return output;
     }
@@ -210,5 +248,11 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         intent.putExtra(PermissionRequestActivity.PERMISSIONS_KEY, permission);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
+    }
+    private static int dpToPx(Context context, int dp) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+        Log.d("WidgetTest", "dp"+dp+ " px "+ px);
+        return px;
     }
 }

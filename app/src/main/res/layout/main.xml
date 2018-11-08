@@ -1,52 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="fill_parent"
-              android:orientation="vertical"
-              android:background="@android:color/transparent"
-              android:layout_gravity="center"
-              android:layout_height="fill_parent">
+    android:layout_width="fill_parent"
+    android:orientation="vertical"
+    android:layout_gravity="center"
+    android:layout_height="fill_parent"
+    android:background="@android:color/transparent">
 
 
-
-    <ImageButton
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:id="@+id/plateImage"
-            android:background="@drawable/plate_bkg"
-            android:scaleType="fitEnd"/>
     <TextView
         android:layout_width="fill_parent"
-        android:layout_height="18dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:id="@+id/typeText"
-        android:background="@android:color/transparent"
-        android:gravity="center"
-        android:textSize="11sp"
-        android:fontFamily="sans-serif-light"
-        android:textColor="#6a6a6a"
-        android:lines="1"
-        android:ellipsize="end"/>
-    <TextView
-        android:layout_width="fill_parent"
-        android:layout_height="20dp"
-        android:layout_above="@id/typeText"
         android:id="@+id/nameText"
         android:background="@android:color/transparent"
         android:gravity="center"
-        android:textSize="12sp"
+        android:textSize="13sp"
+        android:shadowDy="1"
+        android:shadowColor="#80000000"
+        android:shadowRadius="1"
         android:textColor="@android:color/white"
         android:singleLine="true"
         android:ellipsize="end"/>
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_centerHorizontal="true"
+
+    <RelativeLayout
+        android:id="@+id/squareLayout"
+        android:layout_width="fill_parent"
+        android:layout_marginRight="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginBottom="4dp"
         android:layout_above="@id/nameText"
-        android:id="@+id/photoImage"
-        android:background="@android:color/transparent"
-        android:scaleType="fitCenter"/>
+        android:layout_gravity="center"
+        android:layout_height="fill_parent">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/call"
+            android:id="@+id/photoImage"
+            android:scaleType="fitEnd"
+            />
+        <TextView
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="1dp"
+            android:id="@+id/typeText"
+            android:background="@android:color/transparent"
+            android:gravity="center"
+            android:textSize="9sp"
+            android:textColor="@android:color/white"
+            android:singleLine="true"
+            android:shadowDy="1"
+            android:shadowColor="#80000000"
+            android:shadowRadius="2"
+            android:ellipsize="end"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/overlay_button"
+            android:background="@android:color/transparent"/>
+
+    </RelativeLayout>
+
 </RelativeLayout>
