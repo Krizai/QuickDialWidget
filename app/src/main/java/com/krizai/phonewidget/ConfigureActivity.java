@@ -80,6 +80,7 @@ public class ConfigureActivity extends AppCompatActivity {
         Cursor c = getContentResolver().query(contactData, null, null, null, null);
         if (c != null && c.moveToFirst()) {
             final String id = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+            final String lookupKey = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.LOOKUP_KEY));
             String hasPhone = c.getString(c.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
             if (hasPhone != null && hasPhone.equalsIgnoreCase("1")) {
                 final Cursor phones = getContentResolver().query(
@@ -88,13 +89,13 @@ public class ConfigureActivity extends AppCompatActivity {
                         null, null);
                 phones.moveToFirst();
                 if(phones.getCount() == 1){
-                    configureWidget(id, phones);
+                    configureWidget(id, lookupKey, phones);
                 }else {
                     (new AlertDialog.Builder(this)).setCursor(phones, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             phones.moveToPosition(which);
-                            configureWidget(id, phones);
+                            configureWidget(id, lookupKey, phones);
                         }
                     }, "data1").show();
 
@@ -187,14 +188,14 @@ public class ConfigureActivity extends AppCompatActivity {
         startActivityForResult(intent, PICK_CONTACT);
     }
 
-    private void configureWidget(String contactId, Cursor phones) {
+    private void configureWidget(String contactId, String lookupKey, Cursor phones) {
         String phone = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA1));
         int phoneTypeId = phones.getInt(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA2));
         String phoneType = (String) ContactsContract.CommonDataKinds.Phone.getTypeLabel(getResources(), phoneTypeId, "");
-        configureWidget(contactId, phone, phoneType);
+        configureWidget(contactId, lookupKey, phone, phoneType);
     }
 
-    private void configureWidget(String contactId, String phone, String phoneType){
+    private void configureWidget(String contactId, String lookupKey, String phone, String phoneType){
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
         if (extras != null) {
@@ -206,6 +207,7 @@ public class ConfigureActivity extends AppCompatActivity {
             prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_PHONE_KEY, phone);
             prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_TYPE_KEY, phoneType);
             prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_CONTACT_ID_KEY, contactId);
+            prefsEditor.putString(PhoneWidgetProvider.WIDGET_PREFS_CONTACT_LOOKUP_KEY_KEY, lookupKey);
             prefsEditor.commit();
 
             PhoneWidgetProvider.updateWidget(this,appWidgetId);

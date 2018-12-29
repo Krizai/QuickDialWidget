@@ -52,6 +52,7 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
     static final String WIDGET_PREFS_NAME_KEY = "WIDGET_PREFS_NAME_KEY";
     static final String WIDGET_PREFS_PHOTO_KEY = "WIDGET_PREFS_PHOTO_KEY";
     static final String WIDGET_PREFS_CONTACT_ID_KEY = "WIDGET_PREFS_CONTACT_ID_KEY";
+    static final String WIDGET_PREFS_CONTACT_LOOKUP_KEY_KEY = "WIDGET_PREFS_CONTACT_LOOKUP_KEY_KEY";
 
     static final int WIDGET_WIDTH = 70;
 
@@ -107,35 +108,57 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
         String phoneType = prefs.getString(WIDGET_PREFS_TYPE_KEY, "");
         String path  = prefs.getString(WIDGET_PREFS_PHOTO_KEY, null);
         String contactId  = prefs.getString(WIDGET_PREFS_CONTACT_ID_KEY, null);
+        String lookupKey  = prefs.getString(WIDGET_PREFS_CONTACT_LOOKUP_KEY_KEY, null);
         Uri photoUri = path != null ? Uri.parse(path) : null;
-
-        if(contactId != null) {
-            updateWidget(context, appWidgetId, contactId, phone, phoneType);
+        if(lookupKey != null) {
+            updateWidgetByLookupKey(context, appWidgetId, lookupKey, phone, phoneType);
+        }else if(contactId != null) {
+            updateWidgetByContactId(context, appWidgetId, contactId, phone, phoneType);
         }else{
             updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
         }
     }
 
     //New  style ( ver >1.0.3
-    private static void updateWidget(Context context, int appWidgetId, String contactId,
-                                     String phone, String phoneType) {
+    private static void updateWidgetByContactId(Context context, int appWidgetId, String contactId,
+                                                String phone, String phoneType) {
         Cursor c = context.getContentResolver().query(
                 ContactsContract.Contacts.CONTENT_URI,
                 null,
                 ContactsContract.Contacts._ID +" = ?",
                 new String[]{contactId}, null);
 
-        if (c != null && c.moveToFirst()) {
-            String phoneName = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-            String photoUriString = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_URI));
+        updateWidget(context, appWidgetId, c, phone, phoneType);
+
+        if (c != null) {
+            c.close();
+        }
+    }
+
+    private static void updateWidgetByLookupKey(Context context, int appWidgetId, String lookupKey,
+                                                String phone, String phoneType) {
+        Cursor c = context.getContentResolver().query(
+                ContactsContract.Contacts.CONTENT_URI,
+                null,
+                ContactsContract.Contacts.LOOKUP_KEY +" = ?",
+                new String[]{lookupKey}, null);
+
+        updateWidget(context, appWidgetId, c, phone, phoneType);
+
+        if (c != null) {
+            c.close();
+        }
+    }
+
+    private static void updateWidget(Context context, int appWidgetId, Cursor cursor,
+                                                String phone, String phoneType) {
+        if (cursor != null && cursor.moveToFirst()) {
+            String phoneName = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
+            String photoUriString = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.PHOTO_URI));
             Uri photoUri = photoUriString != null ? Uri.parse(photoUriString) : null;
             updateWidget(context, appWidgetId, phone, phoneName, phoneType, photoUri);
         }else{
             updateWidget(context, appWidgetId, "", "Not Found", "Not Found", (Bitmap)null);
-        }
-
-        if (c != null) {
-            c.close();
         }
     }
 
@@ -252,7 +275,6 @@ public class PhoneWidgetProvider extends AppWidgetProvider {
     private static int dpToPx(Context context, int dp) {
         DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
         int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        Log.d("WidgetTest", "dp"+dp+ " px "+ px);
         return px;
     }
 }
